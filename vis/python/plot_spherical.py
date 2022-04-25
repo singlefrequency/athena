@@ -165,9 +165,9 @@ def main(**kwargs):
     # Perform slicing/averaging of scalar data
     if kwargs['midplane']:
         if nx2 % 2 == 0:
-            vals = np.mean(data[kwargs['quantity']][:, nx2/2-1:nx2/2+1, :], axis=1)
+            vals = np.mean(data[kwargs['quantity']][:, nx2//2-1:nx2//2+1, :], axis=1)
         else:
-            vals = data[kwargs['quantity']][:, nx2/2, :]
+            vals = data[kwargs['quantity']][:, nx2//2, :]
         if kwargs['average']:
             vals = np.repeat(np.mean(vals, axis=0, keepdims=True), nx3, axis=0)
     else:
@@ -177,8 +177,8 @@ def main(**kwargs):
         else:
             vals_right = 0.5 * (data[kwargs['quantity']]
                                 [-1, :, :] + data[kwargs['quantity']][0, :, :])
-            vals_left = 0.5 * (data[kwargs['quantity']][(nx3/2)-1, :, :]
-                               + data[kwargs['quantity']][nx3 / 2, :, :])
+            vals_left = 0.5 * (data[kwargs['quantity']][(nx3//2)-1, :, :]
+                               + data[kwargs['quantity']][nx3 // 2, :, :])
 
     # Join scalar data through boundaries
     if not kwargs['midplane']:
@@ -189,12 +189,12 @@ def main(**kwargs):
         if kwargs['midplane']:
             if nx2 % 2 == 0:
                 vals_r = np.mean(data[kwargs['stream'] + '1']
-                                 [:, nx2/2-1:nx2/2+1, :], axis=1).T
+                                 [:, nx2//2-1:nx2//2+1, :], axis=1).T
                 vals_phi = np.mean(data[kwargs['stream'] + '3']
-                                   [:, nx2/2-1:nx2/2+1, :], axis=1).T
+                                   [:, nx2//2-1:nx2//2+1, :], axis=1).T
             else:
-                vals_r = data[kwargs['stream'] + '1'][:, nx2/2, :].T
-                vals_phi = data[kwargs['stream'] + '3'][:, nx2/2, :].T
+                vals_r = data[kwargs['stream'] + '1'][:, nx2//2, :].T
+                vals_phi = data[kwargs['stream'] + '3'][:, nx2//2, :].T
             if kwargs['stream_average']:
                 vals_r = np.tile(np.reshape(np.mean(vals_r, axis=1), (nx1, 1)), nx3)
                 vals_phi = np.tile(np.reshape(np.mean(vals_phi, axis=1), (nx1, 1)), nx3)
