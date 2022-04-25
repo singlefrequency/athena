@@ -4,7 +4,12 @@
 // Licensed under the 3-clause BSD License, see LICENSE file for details
 //========================================================================================
 //! \file gr_bondi.cpp
-//! \brief Problem generator for spherically symmetric black hole accretion.
+//! Problem generator for Bondi spherical accretion with user defined four dimensional
+//  spacetime. In the current case, we used special form of spacetime line element, 
+//  namely Schwarzschild wormhole spacetime with the present tidal forces:
+//  ds^2 = -e^(-2*aa/r)dt^2+dr^2/(1-b(r)/r)+r^2dθ^2 + r^2 sin^2θ d^2ϕ
+//  with aa being the so-called tidal parameter and b(r)=r0 is the wormhole shape function,
+//  in our case it is constant and equals to the wormhole throat radius r0.
 
 // C headers
 
