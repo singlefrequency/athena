@@ -188,11 +188,12 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin) {
   gi.NewAthenaArray(NMETRIC, iu+1);
 
   // Prepare various constants for determining primitives
-  Real u_crit_sq = m/(2.0*r_crit);                                          // (HSW 71)
+  Real redcrit = -aa/r_crit
+  Real u_crit_sq = 1/4*(1-std::exp(2*redcrit));                                          // (HSW 71)
   Real u_crit = -std::sqrt(u_crit_sq);
-  Real t_crit = n_adi/(n_adi+1.0) * u_crit_sq/(1.0-(n_adi+3.0)*u_crit_sq);  // (HSW 74)
+  Real t_crit = -(n_adi*(std::exp(2*redcrit)-1))/((n_adi+1)*(n_adi*std::exp(2*redcrit)-n_adi+3*std::exp(2*redcrit)+1));  // (HSW 74)
   c1 = std::pow(t_crit, n_adi) * u_crit * SQR(r_crit);                      // (HSW 68)
-  c2 = SQR(1.0 + (n_adi+1.0) * t_crit) * (1.0 - 3.0*m/(2.0*r_crit));        // (HSW 69)
+  c2 = SQR(1.0 + (n_adi+1.0) * t_crit) * (std::exp(2*redcrit)+u_crit_sq);        // (HSW 69)
 
   // Initialize primitive values
   for (int k=kl; k<=ku; ++k) {
@@ -534,5 +535,3 @@ Real TemperatureResidual(Real t, Real r) {
       * (1.0 - 2.0*m/r + SQR(c1) / (SQR(SQR(r)) * std::pow(t, 2.0*n_adi))) - c2;
 }
 } // namespace
-
-
