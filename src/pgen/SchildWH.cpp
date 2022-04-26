@@ -132,6 +132,12 @@ Real n_adi, k_adi;  // hydro parameters
 Real r_crit;        // sonic point radius
 Real c1, c2;        // useful constants
 Real bsq_over_rho;  // b^2/rho at inner radius
+Real sth = std::sin(theta);
+Real cth = std::cos(theta);
+Real shape = r0;
+Real redshift = -aa/r;
+Real dshape = 0;
+Real dredshift =  aa/(r*r);
 } 
 
 
