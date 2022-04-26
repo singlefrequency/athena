@@ -83,7 +83,7 @@ void SchildWH(Real x1, Real x2, Real x3, ParameterInput *pin,
   dg_dx1(I00) = -2*std::exp(-2*redshift)*dredshift;
   dg_dx1(I11) = (r*dshape-shape)/((r-shape)*(r-shape));
   dg_dx1(I22) = 2*r;
-  dg_dx1(I33) = 2*r*sth*sth
+  dg_dx1(I33) = 2*r*sth*sth;
   dg_dx1(I01) = 0.0;
   dg_dx1(I02) = 0.0;
   dg_dx1(I03) = 0.0;
@@ -95,7 +95,7 @@ void SchildWH(Real x1, Real x2, Real x3, ParameterInput *pin,
   dg_dx2(I00) = 0;
   dg_dx2(I11) = 0;
   dg_dx2(I22) = 0;
-  dg_dx2(I33) = 2*r*r*sth*cth
+  dg_dx2(I33) = 2*r*r*sth*cth;
   dg_dx2(I01) = 0.0;
   dg_dx2(I02) = 0.0;
   dg_dx2(I03) = 0.0;
@@ -132,12 +132,6 @@ Real n_adi, k_adi;  // hydro parameters
 Real r_crit;        // sonic point radius
 Real c1, c2;        // useful constants
 Real bsq_over_rho;  // b^2/rho at inner radius
-Real sth = std::sin(theta);
-Real cth = std::cos(theta);
-Real shape = r0;
-Real redshift = -aa/r;
-Real dshape = 0;
-Real dredshift =  aa/(r*r);
 } 
 
 
@@ -180,9 +174,6 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin) {
     ku += NGHOST;
   }
 
-  // Get mass and spin of black hole
-  m = pcoord->GetMass();
-  a = pcoord->GetSpin();
 
   // Get ratio of specific heats
   Real gamma_adi = peos->GetGamma();
@@ -194,8 +185,8 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin) {
   gi.NewAthenaArray(NMETRIC, iu+1);
 
   // Prepare various constants for determining primitives
-  Real redcrit = -aa/r_crit
-  Real u_crit_sq = 1/4*(1-std::exp(2*redcrit));                                          // (HSW 71)
+  Real redcrit = -aa/r_crit;
+  Real u_crit_sq = 1/4*(1-std::exp(2*redcrit));
   Real u_crit = -std::sqrt(u_crit_sq);
   Real t_crit = -(n_adi*(std::exp(2*redcrit)-1))/((n_adi+1)*(n_adi*std::exp(2*redcrit)-n_adi+3*std::exp(2*redcrit)+1));  // (HSW 74)
   c1 = std::pow(t_crit, n_adi) * u_crit * SQR(r_crit);                      // (HSW 68)
@@ -223,78 +214,6 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin) {
         phydro->w(IM3,k,j,i) = phydro->w1(IM3,k,j,i) = uu3;
       }
     }
-  }
-
-  // Initialize magnetic field
-  if (MAGNETIC_FIELDS_ENABLED) {
-    // Find normalization
-    Real r, theta, phi;
-    GetBoyerLindquistCoordinates(pcoord->x1f(is), pcoord->x2v((jl+ju)/2),
-                                 pcoord->x3v((kl+ku)/2), &r, &theta, &phi);
-    Real rho, pgas, ut, ur;
-    CalculatePrimitives(r, temp_min, temp_max, &rho, &pgas, &ut, &ur);
-    Real bbr = 1.0/SQR(r);
-    Real bt = 1.0/(1.0-2.0*m/r) * bbr * ur;
-    Real br = (bbr + bt * ur) / ut;
-    Real bsq = -(1.0-2.0*m/r) * SQR(bt) + 1.0/(1.0-2.0*m/r) * SQR(br);
-    Real bsq_over_rho_actual = bsq/rho;
-    Real normalization = std::sqrt(bsq_over_rho/bsq_over_rho_actual);
-
-    // Set face-centered field
-    for (int k=kl; k<=ku+1; ++k) {
-      for (int j=jl; j<=ju+1; ++j) {
-        for (int i=il; i<=iu+1; ++i) {
-          // Set B^1
-          if (j != ju+1 && k != ku+1) {
-            GetBoyerLindquistCoordinates(pcoord->x1f(i), pcoord->x2v(j), pcoord->x3v(k),
-                                         &r, &theta, &phi);
-            CalculatePrimitives(r, temp_min, temp_max, &rho, &pgas, &ut, &ur);
-            bbr = normalization/SQR(r);
-            bt = 1.0/(1.0-2.0*m/r) * bbr * ur;
-            br = (bbr + bt * ur) / ut;
-            Real u0, u1, u2, u3;
-            TransformVector(ut, ur, 0.0, 0.0, r, theta, phi, &u0, &u1, &u2, &u3);
-            Real b0, b1, b2, b3;
-            TransformVector(bt, br, 0.0, 0.0, r, theta, phi, &b0, &b1, &b2, &b3);
-            pfield->b.x1f(k,j,i) = b1 * u0 - b0 * u1;
-          }
-
-          // Set B^2
-          if (i != iu+1 && k != ku+1) {
-            GetBoyerLindquistCoordinates(pcoord->x1v(i), pcoord->x2f(j), pcoord->x3v(k),
-                                         &r, &theta, &phi);
-            CalculatePrimitives(r, temp_min, temp_max, &rho, &pgas, &ut, &ur);
-            bbr = normalization/SQR(r);
-            bt = 1.0/(1.0-2.0*m/r) * bbr * ur;
-            br = (bbr + bt * ur) / ut;
-            Real u0, u1, u2, u3;
-            TransformVector(ut, ur, 0.0, 0.0, r, theta, phi, &u0, &u1, &u2, &u3);
-            Real b0, b1, b2, b3;
-            TransformVector(bt, br, 0.0, 0.0, r, theta, phi, &b0, &b1, &b2, &b3);
-            pfield->b.x2f(k,j,i) = b2 * u0 - b0 * u2;
-          }
-
-          // Set B^3
-          if (i != iu+1 && j != ju+1) {
-            GetBoyerLindquistCoordinates(pcoord->x1v(i), pcoord->x2v(j), pcoord->x3f(k),
-                                         &r, &theta, &phi);
-            CalculatePrimitives(r, temp_min, temp_max, &rho, &pgas, &ut, &ur);
-            bbr = normalization/SQR(r);
-            bt = 1.0/(1.0-2.0*m/r) * bbr * ur;
-            br = (bbr + bt * ur) / ut;
-            Real u0, u1, u2, u3;
-            TransformVector(ut, ur, 0.0, 0.0, r, theta, phi, &u0, &u1, &u2, &u3);
-            Real b0, b1, b2, b3;
-            TransformVector(bt, br, 0.0, 0.0, r, theta, phi, &b0, &b1, &b2, &b3);
-            pfield->b.x3f(k,j,i) = b3 * u0 - b0 * u3;
-          }
-        }
-      }
-    }
-
-    // Calculate cell-centered magnetic field
-    pfield->CalculateCellCenteredField(pfield->b, pfield->bcc, pcoord, il, iu, jl, ju, kl,
-                                       ku);
   }
 
   // Initialize conserved variables
@@ -337,8 +256,7 @@ namespace {
 void GetBoyerLindquistCoordinates(Real x1, Real x2, Real x3, Real *pr,
                                   Real *ptheta, Real *pphi) {
   if (std::strcmp(COORDINATE_SYSTEM, "schwarzschild") == 0 ||
-      std::strcmp(COORDINATE_SYSTEM, "gr_user") == 0 || 
-      std::strcmp(COORDINATE_SYSTEM, "kerr-schild") == 0) {
+      std::strcmp(COORDINATE_SYSTEM, "gr_user") == 0) {
     *pr = x1;
     *ptheta = x2;
     *pphi = x3;
@@ -364,12 +282,6 @@ void TransformVector(Real a0_bl, Real a1_bl, Real a2_bl, Real a3_bl, Real r,
     *pa1 = a1_bl;
     *pa2 = a2_bl;
     *pa3 = a3_bl;
-  } else if (std::strcmp(COORDINATE_SYSTEM, "kerr-schild") == 0) {
-    Real delta = SQR(r) - 2.0*m*r + SQR(a);
-    *pa0 = a0_bl + 2.0*m*r/delta * a1_bl;
-    *pa1 = a1_bl;
-    *pa2 = a2_bl;
-    *pa3 = a3_bl + a/delta * a1_bl;
   }
   else if (std::strcmp(COORDINATE_SYSTEM, "gr_user") == 0) {
     *pa0 = a0_bl;
@@ -396,6 +308,12 @@ void TransformVector(Real a0_bl, Real a1_bl, Real a2_bl, Real a3_bl, Real r,
 
 void CalculatePrimitives(Real r, Real temp_min, Real temp_max, Real *prho,
                          Real *ppgas, Real *put, Real *pur) {
+
+  // Calculate intermediate quantities
+  Real shape = r0;
+  Real redshift = -aa/r;
+  Real dshape = 0;
+  Real dredshift =  aa/(r*r);
   // Calculate solution to (HSW 76)
   Real temp_neg_res = TemperatureMin(r, temp_min, temp_max);
   Real temp;
@@ -536,7 +454,12 @@ Real TemperatureBisect(Real r, Real t_min, Real t_max) {
 //   implements (76) from Hawley, Smarr, & Wilson 1984, ApJ 277 296
 
 Real TemperatureResidual(Real t, Real r) {
+  Real shape = r0;
+  Real redshift = -aa/r;
+  Real dshape = 0;
+  Real dredshift =  aa/(r*r);
   return SQR(1.0 + (n_adi+1.0) * t)
       * (std::exp(-2*redshift) + SQR(c1) / (SQR(SQR(r)) * std::pow(t, 2.0*n_adi))) - c2;
 }
 } // namespace
+
